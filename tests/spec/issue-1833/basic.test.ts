@@ -95,4 +95,38 @@ describe("issue-1833", async () => {
     );
     expect(content).toContain("path: `/users/${userId}/posts/${postId}`");
   });
+
+  test("colon param at the start of a route without a leading slash", async () => {
+    await generateApi({
+      fileName: "no-leading-slash",
+      spec: {
+        openapi: "3.0.3",
+        info: { title: "Issue 1833", version: "1.0.0" },
+        paths: {
+          "/api/:itemId/:item": {
+            get: {
+              operationId: "getItem",
+              responses: { "200": { description: "ok" } },
+            },
+          },
+        },
+      },
+      hooks: {
+        onPreBuildRoutePath: (route) => route.replace(/^\/api\//, ""),
+      },
+      output: tmpdir,
+      silent: true,
+      generateClient: true,
+    });
+
+    const content = await fs.readFile(
+      path.join(tmpdir, "no-leading-slash.ts"),
+      { encoding: "utf8" },
+    );
+
+    expect(content).toContain(
+      "getItem: (itemId: string, item: string, params: RequestParams = {}) =>",
+    );
+    expect(content).toContain("path: `${itemId}/${item}`");
+  });
 });
